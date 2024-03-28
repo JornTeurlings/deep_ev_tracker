@@ -33,19 +33,22 @@ results_table.field_names = ["Inference Time"]
 corner_config = CornerConfig(30, 0.3, 15, 0.15, False, 11)
 
 EvalDatasetConfigDict = {
-    EvalDatasetType.EC: {"dt": 0.010, "root_dir": "<path>"},
+    EvalDatasetType.EC: {"dt": 0.010, "root_dir": r"C:\Users\Siqi Pei\OneDrive - Delft University of Technology\CS4240 Deep Learning\deep_ev_tracker\ec_subseq"},
     EvalDatasetType.EDS: {"dt": 0.005, "root_dir": "<path>"},
 }
 
+'''
+("peanuts_light_160_386", EvalDatasetType.EDS),
+("rocket_earth_light_338_438", EvalDatasetType.EDS),
+("ziggy_in_the_arena_1350_1650", EvalDatasetType.EDS),
+("peanuts_running_2360_2460", EvalDatasetType.EDS),
+("shapes_translation_8_88", EvalDatasetType.EC),
+("shapes_rotation_165_245", EvalDatasetType.EC),
+("shapes_6dof_485_565", EvalDatasetType.EC),
+("boxes_translation_330_410", EvalDatasetType.EC),
+'''
+
 EVAL_DATASETS = [
-    ("peanuts_light_160_386", EvalDatasetType.EDS),
-    ("rocket_earth_light_338_438", EvalDatasetType.EDS),
-    ("ziggy_in_the_arena_1350_1650", EvalDatasetType.EDS),
-    ("peanuts_running_2360_2460", EvalDatasetType.EDS),
-    ("shapes_translation_8_88", EvalDatasetType.EC),
-    ("shapes_rotation_165_245", EvalDatasetType.EC),
-    ("shapes_6dof_485_565", EvalDatasetType.EC),
-    ("boxes_translation_330_410", EvalDatasetType.EC),
     ("boxes_rotation_198_278", EvalDatasetType.EC),
 ]
 
@@ -67,11 +70,11 @@ def evaluate(model, sequence_dataset, dt_track_vis, sequence_name, visualize):
             total=sequence_dataset.n_events - 1,
             desc="Predicting tracks with network...",
         ):
-            with cuda_timer:
-                x = x.to(model.device)
-                y_hat = model.forward(x)
+            #with cuda_timer:
+            x = x.to(model.device)
+            y_hat = model.forward(x)
 
-                sequence_dataset.accumulate_y_hat(y_hat)
+            sequence_dataset.accumulate_y_hat(y_hat)
             tracks_pred.add_observation(t, sequence_dataset.u_centers.cpu().numpy())
 
         if visualize:
@@ -117,7 +120,7 @@ def track(cfg):
     # Configure model
     model = hydra.utils.instantiate(cfg.model, _recursive_=False)
 
-    state_dict = torch.load(cfg.weights_path, map_location="cuda:0")["state_dict"]
+    state_dict = torch.load(cfg.weights_path, map_location=torch.device('cpu'))["state_dict"]
     model.load_state_dict(state_dict)
     if torch.cuda.is_available():
         model = model.cuda()

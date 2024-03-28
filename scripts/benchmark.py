@@ -11,29 +11,23 @@ import numpy as np
 from prettytable import PrettyTable
 from tqdm import tqdm
 
+import sys
+sys.path.append(r"C:\Users\Siqi Pei\OneDrive - Delft University of Technology\CS4240 Deep Learning\deep_ev_tracker")
 from utils.dataset import EvalDatasetType
 from utils.track_utils import compute_tracking_errors, read_txt_results
 
 plt.rcParams["font.family"] = "serif"
 
 EVAL_DATASETS = [
-    ("peanuts_light_160_386", EvalDatasetType.EDS),
-    ("rocket_earth_light_338_438", EvalDatasetType.EDS),
-    ("ziggy_in_the_arena_1350_1650", EvalDatasetType.EDS),
-    ("peanuts_running_2360_2460", EvalDatasetType.EDS),
-    ("shapes_translation_8_88", EvalDatasetType.EC),
-    ("shapes_rotation_165_245", EvalDatasetType.EC),
-    ("shapes_6dof_485_565", EvalDatasetType.EC),
-    ("boxes_translation_330_410", EvalDatasetType.EC),
     ("boxes_rotation_198_278", EvalDatasetType.EC),
 ]
 
 error_threshold_range = np.arange(1, 32, 1)
 results_dir = Path(
-    "<path>/benchmark_data"
+    r"C:\Users\Siqi Pei\OneDrive - Delft University of Technology\CS4240 Deep Learning\deep_ev_tracker"
 )
 out_dir = Path(
-    "<path>/benchmark_results"
+    r"C:\Users\Siqi Pei\OneDrive - Delft University of Technology\CS4240 Deep Learning\deep_ev_tracker\benchmark_results"
 )
 methods = ["network_pred"]
 

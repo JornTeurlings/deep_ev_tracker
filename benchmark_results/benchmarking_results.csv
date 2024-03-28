@@ -1,0 +1,27 @@
+age_5_mu
+Sequence Name,network_pred
+boxes_rotation_198_278,0.35925239434896905
+age_5_std
+Sequence Name,network_pred
+boxes_rotation_198_278,0.2488933515025937
+te_5_mu
+Sequence Name,network_pred
+boxes_rotation_198_278,1.860484021875593
+te_5_std
+Sequence Name,network_pred
+boxes_rotation_198_278,0.419082142533029
+age_mu
+Sequence Name,network_pred
+boxes_rotation_198_278,0.6593035517918989
+age_std
+Sequence Name,network_pred
+boxes_rotation_198_278,0.25246666936353507
+inliers_mu
+Sequence Name,network_pred
+boxes_rotation_198_278,0.9508448540706604
+inliers_std
+Sequence Name,network_pred
+boxes_rotation_198_278,0.17253605016404272
+expected_age
+Sequence Name,network_pred
+boxes_rotation_198_278,0.6561666849555009
