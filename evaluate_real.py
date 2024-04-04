@@ -42,13 +42,14 @@ EvalDatasetConfigDict = {
 ("rocket_earth_light_338_438", EvalDatasetType.EDS),
 ("ziggy_in_the_arena_1350_1650", EvalDatasetType.EDS),
 ("peanuts_running_2360_2460", EvalDatasetType.EDS),
-("shapes_translation_8_88", EvalDatasetType.EC),
-("shapes_rotation_165_245", EvalDatasetType.EC),
-("shapes_6dof_485_565", EvalDatasetType.EC),
-("boxes_translation_330_410", EvalDatasetType.EC),
+
 '''
 
 EVAL_DATASETS = [
+    ("shapes_translation_8_88", EvalDatasetType.EC),
+    ("shapes_rotation_165_245", EvalDatasetType.EC),
+    ("shapes_6dof_485_565", EvalDatasetType.EC),
+    ("boxes_translation_330_410", EvalDatasetType.EC),
     ("boxes_rotation_198_278", EvalDatasetType.EC),
 ]
 
@@ -147,6 +148,7 @@ def track(cfg):
 
         # Load ground truth corners for this seq and override initialization
         gt_features_path = str(Path(cfg.gt_path) / f"{seq_name}.gt.txt")
+        print(gt_features_path)
         gt_start_corners = get_gt_corners(gt_features_path)
 
         dataset.override_keypoints(gt_start_corners)

@@ -2,7 +2,7 @@ hydra:
   run:
     dir: ${model.name}/${now:%Y-%m-%d_%H%M%S}
 
-gt_path: C:\Users\Siqi Pei\OneDrive - Delft University of Technology\CS4240 Deep Learning\deep_ev_tracker\gt_tracks
+gt_path: C:\Users\Siqi Pei\OneDrive - Delft University of Technology\CS4240 Deep Learning\deep_ev_tracker\gt
 running_locally: False
 
 

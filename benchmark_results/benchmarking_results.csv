@@ -1,27 +1,63 @@
 age_5_mu
 Sequence Name,network_pred
+shapes_translation_8_88,0.7187970817198105
+shapes_rotation_165_245,0.5533668565674665
+shapes_6dof_485_565,0.89954160029077
+boxes_translation_330_410,0.8088607850182076
 boxes_rotation_198_278,0.35925239434896905
 age_5_std
 Sequence Name,network_pred
+shapes_translation_8_88,0.2628100503290581
+shapes_rotation_165_245,0.3466373784626244
+shapes_6dof_485_565,0.1758005245467531
+boxes_translation_330_410,0.33418437195230855
 boxes_rotation_198_278,0.2488933515025937
 te_5_mu
 Sequence Name,network_pred
+shapes_translation_8_88,1.131435684553274
+shapes_rotation_165_245,1.9807769751675224
+shapes_6dof_485_565,1.7037274809476768
+boxes_translation_330_410,1.201570278566815
 boxes_rotation_198_278,1.860484021875593
 te_5_std
 Sequence Name,network_pred
+shapes_translation_8_88,0.17736317566820237
+shapes_rotation_165_245,0.6265777931988528
+shapes_6dof_485_565,0.5668623392080181
+boxes_translation_330_410,0.39619537927642495
 boxes_rotation_198_278,0.419082142533029
 age_mu
 Sequence Name,network_pred
+shapes_translation_8_88,0.8645508734976329
+shapes_rotation_165_245,0.8010907803130437
+shapes_6dof_485_565,0.8992518499209351
+boxes_translation_330_410,0.8477693444337855
 boxes_rotation_198_278,0.6593035517918989
 age_std
 Sequence Name,network_pred
+shapes_translation_8_88,0.20937896974040482
+shapes_rotation_165_245,0.2653147314706568
+shapes_6dof_485_565,0.21382686463521397
+boxes_translation_330_410,0.1683950337219623
 boxes_rotation_198_278,0.25246666936353507
 inliers_mu
 Sequence Name,network_pred
+shapes_translation_8_88,0.9623655913978494
+shapes_rotation_165_245,0.9503722084367247
+shapes_6dof_485_565,0.946236559139785
+boxes_translation_330_410,0.9806451612903225
 boxes_rotation_198_278,0.9508448540706604
 inliers_std
 Sequence Name,network_pred
+shapes_translation_8_88,0.1637359390628071
+shapes_rotation_165_245,0.1641097346281534
+shapes_6dof_485_565,0.15775699732388396
+boxes_translation_330_410,0.09728360548387238
 boxes_rotation_198_278,0.17253605016404272
 expected_age
 Sequence Name,network_pred
+shapes_translation_8_88,0.859918657031241
+shapes_rotation_165_245,0.7965599031095282
+shapes_6dof_485_565,0.8820492826563543
+boxes_translation_330_410,0.8435805628753663
 boxes_rotation_198_278,0.6561666849555009

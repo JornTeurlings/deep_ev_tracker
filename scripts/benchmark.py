@@ -19,6 +19,10 @@ from utils.track_utils import compute_tracking_errors, read_txt_results
 plt.rcParams["font.family"] = "serif"
 
 EVAL_DATASETS = [
+    ("shapes_translation_8_88", EvalDatasetType.EC),
+    ("shapes_rotation_165_245", EvalDatasetType.EC),
+    ("shapes_6dof_485_565", EvalDatasetType.EC),
+    ("boxes_translation_330_410", EvalDatasetType.EC),
     ("boxes_rotation_198_278", EvalDatasetType.EC),
 ]
 
