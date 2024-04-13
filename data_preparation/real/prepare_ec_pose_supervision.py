@@ -16,6 +16,9 @@ from matplotlib import pyplot as plt
 from pandas import read_csv
 from tqdm import tqdm
 
+import sys
+sys.path.append("C:/Users/Siqi Pei/OneDrive - Delft University of Technology/CS4240 Deep Learning/deep_ev_tracker")
+
 from utils.utils import blosc_opts
 
 IMG_H = 180

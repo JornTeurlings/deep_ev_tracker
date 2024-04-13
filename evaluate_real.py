@@ -71,11 +71,11 @@ def evaluate(model, sequence_dataset, dt_track_vis, sequence_name, visualize):
             total=sequence_dataset.n_events - 1,
             desc="Predicting tracks with network...",
         ):
-            #with cuda_timer:
-            x = x.to(model.device)
-            y_hat = model.forward(x)
+            with cuda_timer:
+                x = x.to(model.device)
+                y_hat = model.forward(x)
 
-            sequence_dataset.accumulate_y_hat(y_hat)
+                sequence_dataset.accumulate_y_hat(y_hat)
             tracks_pred.add_observation(t, sequence_dataset.u_centers.cpu().numpy())
 
         if visualize:
@@ -121,7 +121,7 @@ def track(cfg):
     # Configure model
     model = hydra.utils.instantiate(cfg.model, _recursive_=False)
 
-    state_dict = torch.load(cfg.weights_path, map_location=torch.device('cpu'))["state_dict"]
+    state_dict = torch.load(cfg.weights_path, map_location="cuda:0")["state_dict"]
     model.load_state_dict(state_dict)
     if torch.cuda.is_available():
         model = model.cuda()

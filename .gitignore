@@ -5,3 +5,7 @@ __pycache__/
 *.pyc
 ec_subseq/
 pretrained_weights/
+EC/
+EC_train/
+correlation3_unscaled/
+train/

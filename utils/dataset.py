@@ -747,7 +747,7 @@ class Multiflow(SequenceDataset):
 class EDSSubseq(SequenceDataset):
     # ToDo: Add to config file
     pose_r = 3
-    pose_mode = False
+    pose_mode = True
 
     def __init__(
         self,
@@ -1121,7 +1121,7 @@ class EDSSubseq(SequenceDataset):
 class ECSubseq(SequenceDataset):
     # ToDO: Add to config file
     pose_r = 4
-    pose_mode = False
+    pose_mode = True
 
     def __init__(
         self,
@@ -1708,7 +1708,7 @@ class SequenceDatasetV2(ABC):
         """
         :return: sorted list of event paths for a given representation and time-delta
         """
-        return sorted(glob(str(sequence_dir / "events" / f"pose_{r:.0f}" / "*.h5")))
+        return sorted(glob(str(sequence_dir / "events" / "pose_5" /"time_surfaces_v2_5"/ "*.h5")))
 
     @staticmethod
     def get_keypoints(frame_start, corner_config: CornerConfig):

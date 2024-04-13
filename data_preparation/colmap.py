@@ -23,6 +23,9 @@ import fire
 import numpy as np
 from scipy.spatial.transform import Rotation
 
+import sys
+sys.path.append("C:/Users/Siqi Pei/OneDrive - Delft University of Technology/CS4240 Deep Learning/deep_ev_tracker")
+
 from utils.dataset import ECPoseSegmentDataset, EDSPoseSegmentDataset
 
 

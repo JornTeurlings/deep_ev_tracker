@@ -5,6 +5,15 @@ import hydra
 import pytorch_lightning as pl
 import torch
 
+import sys
+sys.path.append(r"C:\Users\Siqi Pei\OneDrive - Delft University of Technology\CS4240 Deep Learning\deep_ev_tracker")
+
+import os
+os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
+
+import warnings
+warnings.filterwarnings("ignore")
+
 from utils.callbacks import IncreaseSequenceLengthCallback
 from utils.utils import *
 
@@ -60,6 +69,7 @@ def train(cfg):
     trainer = pl.Trainer(
         **OmegaConf.to_container(cfg.trainer),
         devices=[0],
+        #devices=16,
         accelerator="gpu",
         callbacks=callbacks,
         logger=training_logger

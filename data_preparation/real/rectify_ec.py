@@ -14,6 +14,9 @@ from pandas import read_csv
 import numpy as np
 import cv2
 
+import sys
+sys.path.append("C:/Users/Siqi Pei/OneDrive - Delft University of Technology/CS4240 Deep Learning/deep_ev_tracker")
+
 
 def prepare_data(root_dir, sequence_name):
     sequence_dir = Path(root_dir) / sequence_name
