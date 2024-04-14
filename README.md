@@ -17,6 +17,10 @@ Authors:
     - Evaluating the given weights
     - Preparing the pose data
     - Fine-tuning the model
+
+Github Link: https://github.com/JornTeurlings/deep_ev_tracker.git
+
+Paper Link: https://arxiv.org/abs/2211.12826
  
 
 
