@@ -133,7 +133,7 @@ Comparing the results in the paper with the the found results, it is clear that 
 
 Also when comparing the tracks that are made at the same image frame, it is clear that the performance is similar and that the results mentioned do not deviate a lot with respect to the published results. Do note that the image in the paper is different since it also represents the ground truth in there. 
 
-![Screenshot 2024-04-09 at 13.56.45]((images/figure1.png))
+![Outcome of the EC dataset](images/figure1.png)
 
 
 
