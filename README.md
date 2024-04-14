@@ -1,360 +1,323 @@
-# Data-driven Feature Tracking for Event Cameras
+# Reproducting "Data-driven Feature Tracking for Event Cameras"
+Authors:
 
-<p align="center">
- <a href="https://youtu.be/dtkXvNXcWRY">
-  <img src="doc/thumbnail.PNG" alt="youtube_video" width="800"/>
- </a>
-</p>
+- Jorn Teurlings 4956818
+    - Writing the introduction and general information
+    - Attempt at generating tracks for EC Dataset
+    - Working on the evaluation and reproducing of the results
+- Xiaotong Li 5965373
+    - Evaluating the generalization ability of the networks with different weights on different datasets
+    - Writing a bash script for preparing the data
+    - Making the poster
+- Ziang Liu 5978866
+    - Modify the mistakes in train.py
+    - Write a .bat for preparing pose data
+    - Fine-tuning the model
+- Siqi Pei 5964377
+    - Evaluating the given weights
+    - Preparing the pose data
+    - Fine-tuning the model
+ 
 
-This is the code for the CVPR23 paper **Data-driven Feature Tracking for Event Cameras**
-([PDF](https://rpg.ifi.uzh.ch/docs/Arxiv22_Messikommer.pdf)) by [Nico Messikommer\*](https://messikommernico.github.io/), [Carter Fang\*](https://ctyfang.github.io/), [Mathis Gehrig](https://magehrig.github.io/), and [Davide Scaramuzza](http://rpg.ifi.uzh.ch/people_scaramuzza.html).
-For an overview of our method, check out our [video](https://youtu.be/dtkXvNXcWRY).
 
-If you use any of this code, please cite the following publication:
+## Introduction
+In the realm of computer vision and augmented/virtual reality (AR/VR), the challenge of effectively tracking features in high-speed motion scenes is a pivotal concern, especially as AR/VR devices become increasingly common. Standard cameras, the typical choice for these applications, face significant limitations due to the bandwidth-latency trade-off and motion blur in low-light, high-speed scenarios. These limitations complicate the tracking process, affecting both the efficiency and accuracy of feature tracking under rapid movements. Event cameras, inspired by biological vision mechanisms, offer a promising alternative due to their high temporal resolution and dynamic range, coupled with low power consumption. In this blog, we aim to reproduce the results in the paper by introduces a novel data-driven feature tracker for event cameras that combines the strengths of event cameras with traditional frames to enhance tracking accuracy and efficiency. The focus of this paper will be directed towards the 
 
-```bibtex
-@Article{Messikommer23cvpr,
-  author  = {Nico Messikommer* and Carter Fang* and Mathias Gehrig and Davide Scaramuzza},
-  title   = {Data-driven Feature Tracking for Event Cameras},
-  journal = {IEEE Conference on Computer Vision and Pattern Recognition},
-  year    = {2023},
-}
-```
+## Network architecture
 
-## Abstract
+### Joint Encoder + Feature Network (x2 Patch Encoder)
+| Layer | Spatial Size |
+|-------|--------------|
+| 2x Conv2D 1x1x32 | 31x31 |
+| 2x Conv2D 5x5x64 | 23x23 |
+| 2x Conv2D 5x5x128 | 15x15 |
+| 2x Conv2D 3x3x256 | 5x5 |
+| 2x Conv2D 1x1x384 | 1x1 |
+| Up + Conv2D 1x1x384 | 5x5 |
+| Conv2D 3x3x384 | 5x5 |
+| Up + Conv2D 1x1x384 | 15x15 |
+| Conv2D 3x3x384 | 15x15 |
+| Up + Conv2D 1x1x384 | 23x23 |
+| Conv2D 3x3x384 | 23x23 |
+| Up + Conv2D 1x1x384 | 31x31 |
+| Conv2D 3x3x384 | 31x31 |
+| 2x Conv2D 3x3x384 | 31x31 |
+| Correlation Layer | 31x31 |
+| 2x Conv2D 3x3x128 | 31x31 |
+| 2x Conv2D 3x3x64 | 15x15 |
+| 2x Conv2D 3x3x128 | 7x7 |
+| ConvLSTM 3x3x128 | 7x7 |
+| 2x Conv2D 3x3x256 | 3x3 |
+| Conv2D 3x3x256 | 1x1 |
 
-Because of their high temporal resolution, increased resilience to motion blur, and very sparse output, event cameras have been shown to be ideal for low-latency and low-bandwidth feature tracking, even in challenging scenarios.
-Existing feature tracking methods for event cameras are either handcrafted or derived from first principles but require extensive parameter tuning, are sensitive to noise, and do not generalize to different scenarios due to unmodeled effects.
-To tackle these deficiencies, we introduce the first data-driven feature tracker for event cameras, which leverages low-latency events to track features detected in a grayscale frame.
-We achieve robust performance via a novel frame attention module, which shares information across feature tracks.
-By directly transferring zero-shot from synthetic to real data, our data-driven tracker outperforms existing approaches in relative feature age by up to 120% while also achieving the lowest latency.
-This performance gap is further increased to 130% by adapting our tracker to real data with a novel self-supervision strategy.
+### Frame Attention Module
+| Layer | Spatial Size |
+|-------|--------------|
+| Linear 256 | 1x1 |
+| Linear 256 | 1x1 |
+| MultiHead Attention | 1x1 |
+| LayerScale 256 | 1x1 |
+| Linear Gating 256 | 1x1 |
+| Linear 2 | 1x1 |
 
-<p align="center">
-  <img alt="ziggy" src="./doc/ziggy_in_the_arena_1350_1650-opt.gif" width="45%">
-&nbsp; &nbsp; &nbsp; &nbsp;
-  <img alt="shapes_6dof" src="./doc/shapes_6dof_485_565_tracks.gif" width="45%">
-</p>
+The activation layers that are used are mostly Leaky ReLU's. The Softmax and ReLU are also used inside the network setup. 
 
----
 
-## Content
+## Pretrained Weights
+Since the training of this model in the original paper is done on the Multiflow Dataset which has a total size of 1.48TB, the authors of the paper have given the weights of those models trained on the MultiFlow, EDS and EC dataset. The network as such is tested and retrained solely on data fine-tuned on the EC dataset.
 
-This document describes the usage and installation for this repository.<br>
+An attempt is made to generate new tracks for unknown EC datasets but this unfortunately was not attainable due to the limited amount of information presented for the method in which they generated the tracks for the EC datasets.
 
-1. [Installation](#Installation)<br>
-2. [Test Sequences and Pretrained Weights](#Test-Sequences-and-Pretrained-Weights)<br>
-3. [Preparing Synthetic Data](#Preparing-Synthetic-Data)<br>
-4. [Training on Synthetic Data](#Training-on-Synthetic-Data)<br>
-5. [Preparing Pose Data](#Preparing-Pose-Data)<br>
-6. [Training on Pose Data](#Training-on-Pose-Data)<br>
-7. [Preparing Evaluation Data](#Preparing-Evaluation-Data)<br>
-8. [Running Ours](#Running-Ours)<br>
-9. [Evaluation](#Evaluation)<br>
-10. [Visualization](#Visualization)<br>
+## Goal of reproduction
+In this reproduction, the goal is to verify the working and the network architecture that is used including the method of training and. The working of the architecture is compared agains their reported results. Also assessing the capability of the network to generalize against unseen data and training it on new data for fine tuning are experimented with. 
 
----
+## Experiments and tests
+### Getting a new dataset of EC
 
-## Installation
+The following steps must be taken to generate an own representation on which can be evaluated or tested on:
 
-This guide assumes use of Python 3.9.7<br>
+1. Find online the EC Dataset which contains the following files:
+    - events.txt: One event per line (timestamp x y polarity)
+    - images.txt: One image reference per line (timestamp filename)
+    - images/00000001.png: Images referenced from images.txt
+    - imu.txt: One measurement per line (timestamp ax ay az gx gy gz)
+    - groundtruth.txt: One ground truth measurements per line (timestamp px py pz qx qy qz qw)
+    - calib.txt: Camera parameters (fx fy cx cy k1 k2 p1 p2 k3)
 
-1. If desired, a conda environment can be created using the following command:
+2. Put this inside the already created `ec_subseq` folder
+3. Execute the `prepare_ec_subseq.py` file for the respective dataset and indexes of choice. This might take a while. Additionaly, its an option to execute the `prepare_ec_pose_supervision.py` for pose representations for fine tuning and training.
+4. Unfortunately, it did not get further then this. The files with `.gt.txt` created by the owners for the EC dataset have been generated outside of the code in this repository and seemingly. Modifications of the `generate_track.py` within the timeframe were to no avail. For a better view on the generalization capability of the network, a newly generated set would be optimal to check the finetuned weights. The `generate_track.py` file only allows for multiflow datasets to generate tracks for. 
 
+Future recommendations in this department are therefore to reach out to the authors of the original paper asking how to generate the tracks for non-multiflow data
+
+### Reproduction of paper results
+To setup the experiment, it is important that some configurations are set which do not fully align with the procedure in the README. The results are ran on a Macbook M2 Pro without CUDA. Below are the steps taken to reproduce our results:
+
+1. Download the EC subseq dataset and the pretrained weights found on https://github.com/uzh-rpg/deep_ev_tracker
+2. Locally instantiate the repository
+3. Make sure the requirements.txt are installed using `pip install -r requirements.txt`. Important note: Some files are not installable on an M2 through pip. To make sure you are able to reproduce on an M2:
+    1. Manually install hdf5 using `$ brew install hdf5`
+    2. Now execute `conda install h5py hdf5plugin`
+    3. Another issue that can arise is the NumPy version for SciPy. Simply manually install a numpy version that does work with the respective environment
+5. Add the `ec_subseq` folder to your root and the weights under `pretrained_weights` folder
+6. Inside the `evaluate_real_defaults.yml` replace the `<path>` with the absolute path to your root folder (since there were issues using the `<path>`)
+7. Make the weights_path equal to the path that is being evaluated, in this case `ROOT/pretrained_weights/weights_fintuned_ec.ckpt`
+8. Set the `visualize: True` to also get the videos of the feature tracks being followed
+9. Inside the `pose_ec.yml` set the root_dir to point towards the `ec_subseq` folder
+10. Execute the command `python evaluate_real.py` from the root of your directory
+11. Under the folder `correlation3_unscaled`, there should be a folder that contains `.txt` files. Create a new folder named `network_pred` in the root and place all `.txt` files in this folder.
+12. From the root folder run the command `python scripts/benchmark.py`
+13. The results for all the dataset elements are now printed to the terminal and printed in a csv under `benchmark_results`
+
+By evaluating the `evaluate_real.py` file that is found in the repository associated with the paper, the network runs the network against certain images in the EC dataset with the ground truth corners that it should track. When the network predictions are made, the `benchmark.py` script is ran. This compares the tracks generated with the ground_truth tracks. The following points are then returned from this script:
+- Mean and standard deviation of the Feature Age
+- Mean and standard deviation of the Inlier Ratio
+- The expected Feature Age
+
+
+These quantities mean the following: 
+- Feature age: how long it takes before the feature has a certain distance from the ground truth (normalized relative to the ground truth track duration)
+- Inlier ratio: fraction of succesfully predicted tracks over the number of given feature locations. A feature is defined to be tracked successfully if the predicted feature location at the second timestep after initialization is in the termination threshold to the ground truth location.
+- Expected Feature Age: The normalized feature age multiplied by the inlier ratio. Basically only takes into account stable tracks (tracks that were not lost early in the process of the sequence for the feature age computations)
+
+Comparing the results in the paper with the the found results, it is clear that results match up. The inlier ratio's almost perfectly align. The expected feature age only has only the largest discrepancy of 0.02 in the findings.
+
+**EC**
+| Sequence Name             | Feature Age               | Inlier Ratio      | Expected Feature Age      |
+|---------------------------|---------------------------|-------------------|---------------------------|
+| Shapes Translation   | 0.87 ± 0.21       | 0.96 ± 0.16       | 0.86        |
+| Shapes Rotation   | 0.80 ± 0.26       | 0.95 ± 0.16       | 0.79        |
+| Shapes 6DOF       | 0.90 ± 0.22       | 0.95 ± 0.16       | 0.88        |
+| Boxes Translation | 0.84 ± 0.16       | 0.98 ± 0.10       | 0.84        |
+| Boxes Rotatioon    | 0.70 ± 0.27       | 0.95 ± 0.18       | 0.70        |
+
+Also when comparing the tracks that are made at the same image frame, it is clear that the performance is similar and that the results mentioned do not deviate a lot with respect to the published results. Do note that the image in the paper is different since it also represents the ground truth in there. 
+
+![Screenshot 2024-04-09 at 13.56.45](https://hackmd.io/_uploads/S1TZpjGl0.png)
+
+
+
+
+ 
+### Generalization ability of the networks
+We test three differnt weights (Multiflow weights without fine-tune, weights fine-tuned on EC datasets and weights fine-tuned on EDS datasets) on EC and EDS dataset to see the generalization ability of the model.
+
+**Results of Multiflow weights**
+| Sequence Name      | Feature Age | Inlier Ratio | Expected Feature Age |
+| ------------------ | ----------- |:------------:| -------------------- |
+| EDS datasets       |             |              |                      |
+| peanuts_light      | 0.43 ± 0.29 | 0.80 ±0.29  | 0.40                 |
+| rocket_earth_light | 0.62 ± 0.30 | 0.36 ± 0.21  | 0.28                 |
+| ziggy_in_the_arena | 0.70 ± 0.31 | 0.92 ±0.22  | 0.70                 |
+| peanuts_running    | 0.45 ± 0.28 | 0.73 ±0.35  | 0.42                 |
+| EC datasets        |             |              |                      |
+| Shapes Translation | 0.79 ± 0.17 | 0.97 ± 0.15  | 0.79                 |
+| Shapes Rotation    | 0.78 ± 0.25 | 0.95 ± 0.18  | 0.78                 |
+| Shapes 6DOF        | 0.90 ± 0.21 | 0.95 ± 0.16  | 0.88                 |
+| Boxes Translation  | 0.87 ± 0.19 | 0.97 ± 0.12  | 0.87                 |
+| Boxes Rotatioon    | 0.64 ± 0.24 | 0.95 ± 0.18  | 0.64                 |
+
+**Results of fine-tune weights on EC datasets**
+| Sequence Name      | Feature Age | Inlier Ratio | Expected Feature Age |
+| ------------------ | ----------- |:------------:| -------------------- |
+| EDS datasets       |             |              |                      |
+| peanuts_light      | 0.42 ± 0.29 | 0.83 ±0.30  | 0.40                 |
+| rocket_earth_light | 0.60 ± 0.29 | 0.37 ± 0.21  | 0.27                 |
+| ziggy_in_the_arena | 0.70 ± 0.30 | 0.92 ± 0.21  | 0.70                 |
+| peanuts_running    | 0.40 ± 0.23 | 0.73 ±0.35  | 0.37                 |
+| EC datasets        |             |              |                      |
+| Shapes Translation | 0.87 ± 0.21 | 0.96 ± 0.16  | 0.86                 |
+| Shapes Rotation    | 0.80 ± 0.26 | 0.95 ± 0.16  | 0.79                 |
+| Shapes 6DOF        | 0.90 ± 0.22 | 0.95 ± 0.16  | 0.88                 |
+| Boxes Translation  | 0.84 ± 0.16 | 0.98 ± 0.10  | 0.84                 |
+| Boxes Rotatioon    | 0.70 ± 0.27 | 0.95 ± 0.18  | 0.70                 |
+
+**Results of fine-tune weights on EDS datasets**
+| Sequence Name      | Feature Age | Inlier Ratio | Expected Feature Age |
+| ------------------ | ----------- |:------------:| -------------------- |
+| EDS datasets       |             |              |                      |
+| peanuts_light      | 0.43 ± 0.29 | 0.80 ±0.30  | 0.40                 |
+| rocket_earth_light | 0.64 ± 0.31 | 0.36 ± 0.21  | 0.29                 |
+| ziggy_in_the_arena | 0.70 ± 0.30 | 0.92 ±0.20  | 0.70                 |
+| peanuts_running    | 0.45 ± 0.27 | 0.72 ±0.35  | 0.42                 |
+| EC datasets        |             |              |                      |
+| Shapes Translation | 0.79 ± 0.17 | 0.96 ± 0.15  | 0.78                 |
+| Shapes Rotation    | 0.78 ± 0.24 | 0.94 ± 0.18  | 0.78                 |
+| Shapes 6DOF        | 0.90 ± 0.24 | 0.95 ± 0.14  | 0.88                 |
+| Boxes Translation  | 0.88 ± 0.17 | 0.97 ± 0.13  | 0.87                 |
+| Boxes Rotatioon    | 0.65 ± 0.26 | 0.95 ± 0.17  | 0.65                 |
+ 
+We can see that compared with the result of weights without fine-tune, both fine-tuned weights have some improvements on their fine-tuned datasets but lose some performance on the other datasets.
+
+## Fine-tuning the weight on a new dataset
+### Prepare the pose data
+Before tuning your own models with your datasets, you need to prepare the pose data. The data should adhere to the following structure:
 ```bash
-conda create -n <env_name>
+multiflow_reloaded_extra/
+├─ sequence_xyz/
+│  ├─ images/
+│  │  ├─ 0001.png
+│  │  ├─ 0002.png
+│  │  ├─ ...
+│  │
+│  ├─ calib.txt 
+│  ├─ events.txt
+│  ├─ groundtruth.txt
+│  ├─ images.txt
+│  ├─ imu.txt
+├─ ...
 ```
+The examples are shown in : https://rpg.ifi.uzh.ch/davis_data.html
 
-2.  Install the dependencies via the requirements.txt file<br>
-    `pip install -r requirements.txt`<br><br>
+After gathering the dataset, the users should follow the following steps to generate the pose data:
 
-    Dependencies for training:
-    <ul>
-        <li>PyTorch</li>
-        <li>Torch Lightning</li>
-        <li>Hydra</li>
-    </ul><br>
-    
-    Dependencies for pre-processing:
-    <ul>
-        <li>numpy</li>
-        <li>OpenCV</li>
-        <li>H5Py and HDF5Plugin</li>
-    </ul><br>
-    
-    Dependencies for visualization:
-    <ul>
-        <li>matplotlib</li>
-        <li>seaborn</li>
-        <li>imageio</li>
-    </ul><br>
----
+1. The script utilizes interpolation, but there's a logical error in the dataset they provide. To address this, we need to examine both "groundtruth.txt" and "images.txt". We ensure that the first figure in "images.txt" is greater than the first figure in "groundtruth.txt". If not, we remove the corresponding figure and its related image in file "images".
+2. Then we have to transfer the dataset to the type that could be handled by COLMAP. We wirte a bat file to prepare the data for colmap. Run prepare_all_colmap.bat with command :`prepare_all_colmap.bat ROOT_DIR` ROOT_DIR is the directory of the EC dataset.
+3. Navigate to the colmap directory of a sequence
+4. `colmap feature_extractor --database_path database.db`
+5. `colmap exhaustive_matcher --database_path database.db --image_path ../images_corrected`
+6. `colmap point_triangulator --database_path database.db --image_path ../images_corrected/ --input_path . --output_path .`
+7. Launch the colmap gui, import the model files, and re-run Bundle Adjustment ensuring that only extrinsics are refined.
+8. After processing with COLMAP, we need to transfer back to the image files. We have created a .bat file for the task. Run prepare_all_image.bat with command :`prepare_all_image.bat ROOT_DIR` ROOT_DIR is the directory of the EC dataset.
 
-## Test Sequences and Pretrained Weights
+### Fine-tuning the weight on pose data
 
-To facilitate the evaluation of the tracking performance, we provide the raw events, multiple event representation, etc., for 
-the used test sequences of the [Event Camera Dataset](https://download.ifi.uzh.ch/rpg/CVPR23_deep_ev_tracker/ec_subseq.zip)
-and the [EDS dataset](https://download.ifi.uzh.ch/rpg/CVPR23_deep_ev_tracker/eds_subseq.zip).
-The ground truth tracks for both EC and EDS datasets generated based on the camera poses and KLT tracks can be downloaded [here](https://download.ifi.uzh.ch/rpg/CVPR23_deep_ev_tracker/gt_tracks.zip).
+To enhance the model's generalization capability or tailor it to operate effectively in specialized environments, such as low-light conditions, developers offer a `train.py`eb script to facilitate users in fine-tuning the model on custom datasets. Despite instructions provided on the Github page, there are still errors and omissions in the process. Therefore, we outline the fine-tuning steps below to assist users in effectively tuning the model to their specific EC (event camera) datasets:
 
-Furthermore, we also provide the [network weights](https://download.ifi.uzh.ch/rpg/CVPR23_deep_ev_tracker/pretrained_weights.zip) trained on the Multiflow dataset, the weights fine-tuned on the EC, 
-and fine-tuned on the EDS dataset using our proposed pose supervision strategy.
-
-
----
-
-## Preparing Synthetic Data
-
-### Download MultiFlow Dataset
-
-Download links:
-
-- [train (1.3 TB)](https://download.ifi.uzh.ch/rpg/multiflow/train.tar)
-- [test (258 GB)](https://download.ifi.uzh.ch/rpg/multiflow/test.tar)
-
-If you use this dataset in an academic context, please cite:
-
-```bibtex
-@misc{Gehrig2022arxiv,
- author = {Gehrig, Mathias and Muglikar, Manasi and Scaramuzza, Davide},
- title = {Dense Continuous-Time Optical Flow from Events and Frames},
- url = {https://arxiv.org/abs/2203.13674},
- publisher = {arXiv},
- year = {2022}
-}
-```
-
-The models were pre-trained using an older version of this dataset, available at the time of the submission.
-The download links above link to the up-to-date version of the dataset.
-
-### Pre-Processing Instructions
-
-Preparation of the synthetic data involves generating input representations for the
-Multiflow sequences and extracting the ground-truth tracks.<br>
-
-To generate ground-truth tracks, run:<br>
-`python data_preparation/synthetic/generate_tracks.py <path_to_multiflow_dataset> 
-<path_to_multiflow_extras_dir>`<br>
-
-Where the Multiflow Extras directory contains data needed to train our network such as the
-ground-truth tracks and input event representations.<br>
-
-To generate input event representations, run:<br>
-`python data_preparation/synthetic/generate_event_representations <path_to_multiflow_dataset> 
-<path_to_multiflow_extras_dir> <representation_type>`<br>
-
-The resulting directory structure is:<br>
-
-```
+1. Prepare the training set, ensure it follows the structure outlined below:
+```bash
 multiflow_reloaded_extra/
 ├─ sequence_xyz/
 │  ├─ events/
-│  │  ├─ 0.0100/
-│  │  │  ├─ representation_abc/
-│  │  │  │  ├─ 0400000.h5
-│  │  │  │  ├─ 0410000.h5
-│  │  ├─ 0.0200/
-│  │  │  ├─ representation_abc/
+│  │  ├─ pose_5/
+│  │  │  ├─ time_surface_v2_5/
+│  │  │  │  ├─ 0377119.h5
+│  │  │  │  ├─ 0385938.h5
+│  │  │  │  ├─...
+│  │  │  ├─...
+│  │  ├─...
 │  │
-│  ├─ tracks/
-│  │  ├─ shitomasi.gt.txt
-```
-
----
-
-## Training on Synthetic Data
-
-Training on synthetic data involves configuring the dataset, model, and training. The high-level config is at
-`configs/train_defaults.yaml`.<br>
-
-To configure the dataset:
-
-<ul>
-    <li>Set data field to mf</li>
-    <li>Configure the synthetic dataset in configs/data/mf.yaml</li>
-    <li>Set the track_name field (default is shitomasi_custom)</li>
-    <li>Set the event representation (default is SBT Max, referred to as time_surfaces_v2_5 here)</li>
-</ul>
-
-Important parameters in mf.yaml are:<br>
-
-<ul>
-    <li>augment - Whether to augment the tracks or not. The actual limits for augmentations are defined as 
-        global variables in utils/datasets.py</li>
-    <li>mixed_dt - Whether to use both timesteps of 0.01 and 0.02 during training.</li>
-    <li>n_tracks/val - Number of tracks to use for validation and training. All tracks are loaded, shuffled, 
-        then trimmed.</li>
-</ul>
-
-To configure the model, set the model field to one of the available options in `configs/model`. Our default
-model is `correlation3_unscaled`.<br>
-
-To configure the training process:
-
-<ul>
-    <li>Set the learning rate in configs/optim/adam.yaml (Default is 1e-4)</li>
-    <li>In configs/training/supervised_train.yaml, set the sequence length schedule via init_unrolls, max_unrolls, unroll_factor, and the schedule. 
-        At each of the specified training steps, the number of unrolls will be multiplied by the unroll factor.</li>
-    <li>Configure the synthetic dataset in configs/data/mf.yaml</li>
-</ul>
-
-The last parameter to set is `experiment` for organizational purposes.<br>
-
-With everything configured, we can begin training by running
-
-```bash
-CUDA_VISIBLE_DEVICES=<gpu_id> python train.py
-```
-
-Hydra will then instantiate the dataloader and model.
-PyTorch Lightning will handle the training and validation loops.
-All outputs (checkpoints, gifs, etc) will be written to the log directory.<br>
-
-The correlation_unscaled model inherits from `models/template.py` since it contains the core logic for training and validation.
-At each training step, event patches are fetched for each feature track (via `TrackData` instances) and concatenated
-prior to inference. Following inference, the `TrackData` instances accumulate the predicted feature displacements.
-The template file also contains the validation logic for visualization and metric computation.
-
-To inspect models during training, we can launch an instance of tensorboard for the log directory:
-`tensorboard --logdir <log_dir>`.
-
----
-
-## Preparing Pose Data
-
-To prepare pose data for fine-tuning, we need to rectify the data, run colmap, and generate event
-representations. <br>
-
-To rectify the data, run `python data_preparation/real/rectify_ec.py` or
-`python data_preparation/real/eds_rectify_events_and_frames.py`.<br>
-
-To refine the pose data with colmap, see `data_preparation/colmap.py`. We first run `colmap.py generate`.
-This will convert the pose data to a readable format for COLMAP to serve as an initial guess,
-generated in the `colmap` directory of the sequence. We then follow the instructions
-[here](https://colmap.github.io/faq.html#reconstruct-sparse-dense-model-from-known-camera-poses) from the COLMAP
-FAQ regarding refining poses.<br>
-
-Essentially:
-
-<ol>
-    <li>Navigate to the colmap directory of a sequence</li>
-    <li>colmap feature_extractor --database_path database.db</li>
-    <li>colmap exhaustive_matcher --database_path database.db --image_path ../images_corrected</li>
-    <li>colmap point_triangulator --database_path database.db --image_path ../images_corrected/ 
-        --input_path . --output_path .</li>
-    <li>Launch the colmap gui, import the model files, and re-run Bundle Adjustment ensuring that
-        only extrinsics are refined.</li>
-    <li>Run colmap.py extract to convert the pose data from COLMAP format back to our standard format.</li>
-</ol>
-
-To generate event representations, run `python data_preparation/real/prepare_eds_pose_supervision.py`
-or `prepare_ec_pose_supervision.py`. These scripts generate `r` event representations between frames.
-The time-window of the last event representation in the interval is trimmed. Currently, these scripts
-only support SBT-Max as a representation.
-
----
-
-## Training on Pose Data
-
-To train on pose data, we again need to configure the dataset, model, and training. The model configuration is the
-same as before. The `data` field now needs to be set to `pose_ec`, and `configs/data/pose_ec.yaml` must be
-configured.<br>
-
-Important parameters to set in `pose.yaml` include:
-
-<ul>
-    <li>root_dir - Directory with prepared pose data sequences.</li>
-    <li>n_frames_skip - How many frames to skip when chunking a sequence into several
-        sub-sequences for pose training.</li>
-    <li>n_event_representations_per_frame - r value used when generating the event representations.</li>
-</ul>
-
-In terms of dataset configuration must also set `pose_mode = True` in `utils/dataset.py`. This overrides the loading of
-event representations from the time-step directories (eg `0.001`) and instead from the pose data directories
-(eg `pose_3`).<br>
-
-In terms of the training process, for pose supervision we use a single sequence length so `init_unrolls` and
-`max_unrolls` should be the same value. Also, the schedule should have a single value indicating when to stop training.
-The default learning rate for pose supervision is `1e-6`.<br>
-
-Since we are fine-tuning on pose, we must also set the `checkpoint_path` in `configs/training/pose_finetuning_train_ec.yaml` to the path of our pretrained model.
-
-We are then ready to run `train.py` and fine-tune the network.
-Again, during training, we can launch tensorboard.
-For pose supervision, the re-projected features are visualized.<br>
-
----
-
-## Running Ours
-
-### Preparing Input Data
-
-The `SequenceDataset` class is responsible for loading data for inference.
-It expects a similar data format for the sequence as with synthetic training:<br>
-
-```
-sequence_xyz/
-├─ events/
-│  ├─ 0.0100/
-│  │  ├─ representation_abc/
-│  │  │  ├─ 0000000.h5
-│  │  │  ├─ 0010000.h5
-├─ images_corrected/
-```
-
-To prepare a single sequence for inference, we rectify the sequence, a sequence segment, and generate
-event representations.<br>
-
-#### Rectification
-
-For the EDS dataset, we download the txt-based version of a sequence and run `data_preparation/real/eds_rectify_events_and_frames.py`.<br>
-For the Event-Camera dataset, we download the txt-based version of a sequence and run `data_preparation/real/rectify_ec.py`.<br>
-
-#### Sequence Cropping and Event Generation
-
-For the EDS dataset, we run `data_preparation/real/prepare_eds_subseq` with the index range for
-the cropped sequence as inputs. This will generate a new sub-sequence directory, copy the
-relevant frames for the selected indices, and generate event representations.
-
-### Inference
-
-The inference script is `evaluate_real.py` and the configuration file is `eval_real_defaults.yaml`.
-We must set the event representation and checkpoint path before running the script.<br>
-
-The list of sequences is defined in the `EVAL_DATASETS` variable in `evaluate_real.py`.
-The script iterates over these sequences, instantiates a SequenceDataset instance for each one,
-and performs inference on the event representations generated in the previous section.
-
-For benchmarking, the provided feature points need to be downloaded and used in order to ensure that all methods use
-the same features.
-The `gt_path` needs to be set in `eval_real_defaults.yaml` to the directory containing the text files.
-
----
-
-## Evaluation
-
-Once we have predicted tracks for a sequence using all methods, we can
-benchmark their performance using `scripts/benchmark.py`. This script loads
-the predicted tracks for each method and compares them against the re-projected,
-frame-based ground-truth tracks, which can be downloaded here.<br>
-Inside the `scripts/benchmark.py`, the evaluation sequences, the results directory, the output directory and
-the name of the test methods `<method_name_x>` need to be specified.
-The result directory should have the following structure:
-
-```
-sequence_xyz/
-├─ gt/
-│  ├─ <seq_0>.gt.txt
-│  ├─ <seq_1>.gt.txt
+│  ├─ colmap/
+│  │  ├─groundtruth.txt 
 │  ├─ ...
-├─ <method_name_1>/
-│  ├─ <seq_0>.txt
-│  ├─ <seq_1>.txt
-│  ├─ ...
-├─ <method_name_2>/
-│  ├─ <seq_0>.txt
-│  ├─ <seq_1>.txt
-│  ├─ ...
+├─ ...
 ```
+The users could put all the sequences they want to train in the directory multiflow_reloaded_extra.
 
-The results are printed to the console and written to a CSV in the output directory.
+2. Change the settings in `train_defaults.yaml`:
+
+   1. `hydra: run: dir` should be set to the directory that the user want to save their weights after fine-tuning
+
+   2. `defaults: data` should be set to pose_ec.
+
+   3. `defaults: training` should be set to pose_finetuning_train_ec .
+
+3. Change the settings in `pose_finetuning_train_ec.yaml`: 
+
+    1. `checkpoint_path` should be configured to the desired weight file for fine-tuning.
+
+    2. To extend the fine-tuning process, adjust the `unroll_schedule` parameter to increase the number of iterations.
+
+4. Change the settings in `dataset.py`:
+
+    1. Set `pose_mode: True`.
+    
+    2.  In function `get_even_event_paths` change the path to the path of the 。h5 file in `events/pose5/time_surface_v2_5`.
+
+5. Set the lr in `config/optim/adam.yaml` to `lr: 1e-6`.
+6. Fine tune the weight with command: `python train.py`.
+
+### The outcome of Fine-tuning
+
+After correcting the error in train.py, we proceed to evaluate the fine-tuned performance of the model. This evaluation involves splitting the entire dataset provided into a training set and a test set, with an 80% - 20% proportion. The weights are adjusted from the multiflow weight, and the results are summarized in the following table:
+
+**Results of mf weights**
+| Sequence Name      | Feature Age | Inlier Ratio | Expected Feature Age |
+| ------------------ | ----------- |:------------:| -------------------- |               
+| peanuts_light      | 0.43 ± 0.29 | 0.80 ±0.29  | 0.40|
+| rocket_earth_light | 0.65 ± 0.29 | 0.38 ± 0.22  | 0.30|
+| ziggy_in_the_arena | 0.72 ± 0.28 | 0.92 ± 0.21  | 0.70|
+| peanuts_running    | 0.36 ± 0.20 | 0.76 ±0.30  | 0.33|
+
+**Results of fine-tuned weights with new dataset**
+| Sequence Name      | Feature Age | Inlier Ratio | Expected Feature Age |              
+| ------------------ | ----------- |:------------:| -------------------- |               
+| peanuts_light      | 0.43 ± 0.29 | 0.81 ±0.29  | 0.40 |
+| rocket_earth_light | 0.66 ± 0.31 | 0.39 ± 0.23  | 0.31 |
+| ziggy_in_the_arena | 0.73 ± 0.28 | 0.94 ± 0.28  | 0.72 |
+| peanuts_running    | 0.33 ± 0.16 | 0.71 ±0.28  | 0.31 |
+
+The results indicate only marginal improvement in performance, likely due to the complexity of the model and the limited size of the dataset. 
+
+Nevertheless, this improvement demonstrates that the modifications made to train.py are effective. Users can now utilize train.py to fine-tune the model using their own event camera dataset.
+
+
+## Evaluation of reproducibility
+
+The author has developed an excellent network for computing optic flow between frames captured by event cameras. In terms of reproducibility for this article, we offer the following remarks:
+
+1. From a modeling standpoint, given the detailed description of the structure provided in the paper, constructing a similar model should not be challenging.
+
+2. However, reproducing the entire data processing pipeline is challenging since the data does not directly come from event cameras; the author utilized nearly 2000 lines of code for data preprocessing.
+
+3. Moreover, training the complete model is also challenging. Firstly, the training dataset provided by the author is extensive (1TB). Additionally, compared to images or recordings, collecting data from event cameras is arduous.
+
+4. Finally, we think that although the author encapsulated the code in a YAML file like a black box, simplifying the training and testing process to a large extent, they did not provide detailed explanations of the parameter settings in the YAML file. Moreover, errors in the file paths specified within the Python files have negatively impacted the reproducibility of the code.
+
+
+
+
+
+## Results and Conclusion
+
+The results were quite clear in that the performance published in the paper were accurate given the weights that were used. The performance for the EC dataset was over all different subsets clearly identical to the one published in the paper even after running it numerous amounts of times. 
+
+
+We made some modifications to the original code to ensure that the train.py script runs successfully. Utilizing this modified code, we fine-tuned the model parameters using the provided dataset. However, due to the limited size of the dataset, the performance of the model was not as good as expected. Nevertheless, this experiment demonstrated the effectiveness of the fine-tuning process, indicating that users can adjust the model parameters based on their own event camera dataset to achieve better performance.
+
+An unfortunate part about the paper is that they did not provide the means to make tracks and the sorts for the EC and EDS dataset which significantly hampers a variety of testing and training that can be potentially done. Althought this is more extra and not part of the original reproduction and therefore does not hamper the reproduction of their results. 
+
+
+
+
+
